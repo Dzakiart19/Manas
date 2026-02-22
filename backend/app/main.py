@@ -14,43 +14,53 @@ from app.interfaces.errors.exception_handlers import register_exception_handlers
 from app.infrastructure.models.documents import AgentDocument, SessionDocument, UserDocument
 from beanie import init_beanie
 
-# Initialize logging system
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Load configuration
 settings = get_settings()
 
+mongodb_available = False
+redis_available = False
 
-# Create lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Code executed on startup
+    global mongodb_available, redis_available
     logger.info("Application startup - Manus AI Agent initializing")
     
-    # Initialize MongoDB and Beanie
-    await get_mongodb().initialize()
-
-    # Initialize Beanie
-    await init_beanie(
-        database=get_mongodb().client[settings.mongodb_database],
-        document_models=[AgentDocument, SessionDocument, UserDocument]
-    )
-    logger.info("Successfully initialized Beanie")
+    try:
+        await get_mongodb().initialize()
+        await init_beanie(
+            database=get_mongodb().client[settings.mongodb_database],
+            document_models=[AgentDocument, SessionDocument, UserDocument]
+        )
+        mongodb_available = True
+        logger.info("Successfully initialized MongoDB and Beanie")
+    except Exception as e:
+        logger.warning(f"MongoDB initialization failed (app will run with limited functionality): {e}")
+        mongodb_available = False
     
-    # Initialize Redis
-    await get_redis().initialize()
+    try:
+        await get_redis().initialize()
+        redis_available = True
+        logger.info("Successfully initialized Redis")
+    except Exception as e:
+        logger.warning(f"Redis initialization failed (app will run with limited functionality): {e}")
+        redis_available = False
     
     try:
         yield
     finally:
-        # Code executed on shutdown
         logger.info("Application shutdown - Manus AI Agent terminating")
-        # Disconnect from MongoDB
-        await get_mongodb().shutdown()
-        # Disconnect from Redis
-        await get_redis().shutdown()
-
+        if mongodb_available:
+            try:
+                await get_mongodb().shutdown()
+            except Exception:
+                pass
+        if redis_available:
+            try:
+                await get_redis().shutdown()
+            except Exception:
+                pass
 
         logger.info("Cleaning up AgentService instance")
         try:
@@ -63,7 +73,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Manus AI Agent", lifespan=lifespan)
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -72,8 +81,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register exception handlers
 register_exception_handlers(app)
 
-# Register routes
 app.include_router(router, prefix="/api/v1")

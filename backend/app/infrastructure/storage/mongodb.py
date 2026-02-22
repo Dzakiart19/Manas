@@ -2,6 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
 from typing import Optional
 import logging
+import certifi
 from app.core.config import get_settings
 from functools import lru_cache
 
@@ -19,18 +20,19 @@ class MongoDB:
             
         try:
             # Connect to MongoDB
+            conn_kwargs = {
+                "tlsCAFile": certifi.where(),
+                "serverSelectionTimeoutMS": 10000,
+                "connectTimeoutMS": 10000,
+                "socketTimeoutMS": 10000,
+            }
             if self._settings.mongodb_username and self._settings.mongodb_password:
-                # Use authenticated connection if username and password are configured
-                self._client = AsyncIOMotorClient(
-                    self._settings.mongodb_uri,
-                    username=self._settings.mongodb_username,
-                    password=self._settings.mongodb_password,
-                )
-            else:
-                # Use unauthenticated connection if no credentials are provided
-                self._client = AsyncIOMotorClient(
-                    self._settings.mongodb_uri,
-                )
+                conn_kwargs["username"] = self._settings.mongodb_username
+                conn_kwargs["password"] = self._settings.mongodb_password
+            self._client = AsyncIOMotorClient(
+                self._settings.mongodb_uri,
+                **conn_kwargs,
+            )
             # Verify the connection
             await self._client.admin.command('ping')
             logger.info("Successfully connected to MongoDB")

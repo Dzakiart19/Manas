@@ -2,8 +2,8 @@ modules = ["python-3.11", "nodejs-20"]
 [userenv]
 
 [userenv.shared]
-API_BASE = "https://api.openai.com/v1"
-MODEL_NAME = "gpt-4o"
+API_BASE = "https://api.groq.com/openai/v1"
+MODEL_NAME = "llama-3.3-70b-versatile"
 TEMPERATURE = "0.7"
 MAX_TOKENS = "2000"
 MONGODB_DATABASE = "manus"

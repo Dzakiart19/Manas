@@ -21,7 +21,9 @@ class RedisClient:
                 port=self._settings.redis_port,
                 db=self._settings.redis_db,
                 password=self._settings.redis_password,
-                decode_responses=True
+                decode_responses=True,
+                socket_timeout=5,
+                socket_connect_timeout=5,
             )
             # Verify the connection
             await self._client.ping()
