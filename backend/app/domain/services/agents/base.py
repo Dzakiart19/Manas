@@ -122,7 +122,6 @@ class BaseAgent(ABC):
 
                 tool_response = {
                     "role": "tool",
-                    "function_name": function_name,
                     "tool_call_id": tool_call_id,
                     "content": result.model_dump_json()
                 }
@@ -210,7 +209,6 @@ class BaseAgent(ABC):
             self.memory.add_message({
                 "role": "tool",
                 "tool_call_id": tool_call_id,
-                "function_name": function_name,
                 "content": message.model_dump_json()
             })
         else:

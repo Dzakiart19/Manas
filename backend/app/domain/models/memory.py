@@ -25,8 +25,12 @@ class Memory(BaseModel):
         self.messages.extend(messages)
 
     def get_messages(self) -> List[Dict[str, Any]]:
-        """Get all message history"""
-        return self.messages
+        """Get all message history, sanitized for API compatibility"""
+        sanitized = []
+        for msg in self.messages:
+            clean = {k: v for k, v in msg.items() if k != "function_name"}
+            sanitized.append(clean)
+        return sanitized
     
     def get_last_message(self) -> Optional[Dict[str, Any]]:
         """Get the last message"""
@@ -40,11 +44,18 @@ class Memory(BaseModel):
     
     def compact(self) -> None:
         """Compact memory"""
-        for message in self.messages:
+        for i, message in enumerate(self.messages):
             if message.get("role") == "tool":
-                if message.get("function_name") in ["browser_view", "browser_navigate"]:
+                prev = self.messages[i-1] if i > 0 else None
+                func_name = ""
+                if prev and prev.get("role") == "assistant" and prev.get("tool_calls"):
+                    for tc in prev["tool_calls"]:
+                        if tc.get("id") == message.get("tool_call_id"):
+                            func_name = tc.get("function", {}).get("name", "")
+                            break
+                if func_name in ["browser_view", "browser_navigate"]:
                     message["content"] = ToolResult(success=True, data='(removed)').model_dump_json()
-                    logger.debug(f"Removed tool result from memory: {message['function_name']}")
+                    logger.debug(f"Removed tool result from memory: {func_name}")
 
     @property
     def empty(self) -> bool:

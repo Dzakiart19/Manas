@@ -7,7 +7,7 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 TEMPERATURE = "0.7"
 MAX_TOKENS = "2000"
 MONGODB_DATABASE = "manus"
-REDIS_PORT = "6379"
+REDIS_PORT = "16364"
 REDIS_DB = "0"
 SANDBOX_ADDRESS = "localhost"
 SEARCH_PROVIDER = "bing"
@@ -51,45 +51,45 @@ args = "Frontend"
 name = "Sandbox Service"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace/sandbox && python -m uvicorn app.main:app --host 0.0.0.0 --port 8080"
-waitForPort = 8080
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace/sandbox && PYTHONPATH=/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages python -m uvicorn app.main:app --host 0.0.0.0 --port 8080"
+waitForPort = 8080
 
 [[workflows.workflow]]
 name = "Backend API"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace/backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
-waitForPort = 8000
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace/backend && PYTHONPATH=/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+waitForPort = 8000
 
 [[workflows.workflow]]
 name = "Frontend"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace/frontend && npx vite --host 0.0.0.0 --port 5000"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace/frontend && node_modules/.bin/vite --host 0.0.0.0 --port 5000"
+waitForPort = 5000
+
 [[ports]]
 localPort = 5000
-externalPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 8000
-externalPort = 80
+externalPort = 8000
 
 [[ports]]
 localPort = 8080

@@ -42,41 +42,38 @@ class OpenAILLM(LLM):
         max_retries = 3
         base_delay = 1.0  
 
-        for attempt in range(max_retries + 1):  # every try
+        for attempt in range(max_retries + 1):
             response = None
             try:
                 if attempt > 0:
-                    delay = base_delay * (2 ** (attempt - 1))  # back off
+                    delay = base_delay * (2 ** (attempt - 1))
                     logger.info(f"Retrying OpenAI API request (attempt {attempt + 1}/{max_retries + 1}) after {delay}s delay")
                     await asyncio.sleep(delay)
 
-                if tools:
-                    logger.debug(f"Sending request to OpenAI with tools, model: {self._model_name}, attempt: {attempt + 1}")
-                    response = await self.client.chat.completions.create(
-                        model=self._model_name,
-                        temperature=self._temperature,
-                        max_tokens=self._max_tokens,
-                        messages=messages,
-                        tools=tools,
-                        response_format=response_format,
-                        tool_choice=tool_choice,
-                        parallel_tool_calls=False,
-                    )
-                else:
-                    logger.debug(f"Sending request to OpenAI without tools, model: {self._model_name}, attempt: {attempt + 1}")
-                    response = await self.client.chat.completions.create(
-                        model=self._model_name,
-                        temperature=self._temperature,
-                        max_tokens=self._max_tokens,
-                        messages=messages,
-                        response_format=response_format,
-                    )
+                kwargs = {
+                    "model": self._model_name,
+                    "temperature": self._temperature,
+                    "max_tokens": self._max_tokens,
+                    "messages": messages,
+                }
 
-                logger.debug(f"Response from OpenAI: {response.model_dump()}")
+                if tools:
+                    kwargs["tools"] = tools
+                    kwargs["parallel_tool_calls"] = False
+                    if tool_choice and isinstance(tool_choice, str):
+                        kwargs["tool_choice"] = tool_choice
+                
+                if response_format and not tools:
+                    kwargs["response_format"] = response_format
+
+                logger.debug(f"Sending request to LLM, model: {self._model_name}, has_tools: {bool(tools)}, attempt: {attempt + 1}")
+                response = await self.client.chat.completions.create(**kwargs)
+
+                logger.debug(f"Response from LLM: {response.model_dump()}")
 
                 
                 if not response or not response.choices:
-                    error_msg = f"OpenAI API returned invalid response (no choices) on attempt {attempt + 1}"
+                    error_msg = f"LLM API returned invalid response (no choices) on attempt {attempt + 1}"
                     logger.error(error_msg)
                     if attempt == max_retries:
                         raise ValueError(f"Failed after {max_retries + 1} attempts: {error_msg}")
@@ -85,7 +82,7 @@ class OpenAILLM(LLM):
                 return response.choices[0].message.model_dump()
 
             except Exception as e:
-                error_msg = f"Error calling OpenAI API on attempt {attempt + 1}: {str(e)}"
+                error_msg = f"Error calling LLM API on attempt {attempt + 1}: {str(e)}"
                 logger.error(error_msg)
                 if attempt == max_retries:
                     raise e
