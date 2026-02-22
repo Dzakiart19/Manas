@@ -1,0 +1,6 @@
+modules = ["python-3.11", "nodejs-20"]
+[userenv]
+
+[userenv.shared]
+API_BASE = "https://api-dzeck--az405scqqg.replit.app/v1"
+MODEL_NAME = "claude40opus"
