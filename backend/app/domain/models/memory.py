@@ -25,12 +25,8 @@ class Memory(BaseModel):
         self.messages.extend(messages)
 
     def get_messages(self) -> List[Dict[str, Any]]:
-        """Get all message history, sanitized for API compatibility"""
-        sanitized = []
-        for msg in self.messages:
-            clean = {k: v for k, v in msg.items() if k != "function_name"}
-            sanitized.append(clean)
-        return sanitized
+        """Get all message history"""
+        return list(self.messages)
     
     def get_last_message(self) -> Optional[Dict[str, Any]]:
         """Get the last message"""

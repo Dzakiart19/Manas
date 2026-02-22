@@ -6,10 +6,10 @@ class Settings(BaseSettings):
     
     # Model provider configuration
     api_key: str | None = None
-    api_base: str = "https://api.deepseek.com/v1"
+    api_base: str = "https://api.anthropic.com"
     
     # Model configuration
-    model_name: str = "deepseek-chat"
+    model_name: str = "claude-sonnet-4-20250514"
     temperature: float = 0.7
     max_tokens: int = 2000
     
