@@ -2,8 +2,8 @@ modules = ["python-3.11", "nodejs-20"]
 [userenv]
 
 [userenv.shared]
-API_BASE = "https://api.groq.com/openai/v1"
-MODEL_NAME = "llama-3.3-70b-versatile"
+API_BASE = "https://api.anthropic.com"
+MODEL_NAME = "claude-3-sonnet-20240229"
 TEMPERATURE = "0.7"
 MAX_TOKENS = "2000"
 MONGODB_DATABASE = "manus"
