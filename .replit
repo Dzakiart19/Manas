@@ -3,9 +3,9 @@ modules = ["python-3.11", "nodejs-20"]
 
 [userenv.shared]
 API_BASE = "https://api.anthropic.com"
-MODEL_NAME = "claude-3-sonnet-20240229"
+MODEL_NAME = "claude-sonnet-4-20250514"
 TEMPERATURE = "0.7"
-MAX_TOKENS = "2000"
+MAX_TOKENS = "4096"
 MONGODB_DATABASE = "manus"
 REDIS_PORT = "16364"
 REDIS_DB = "0"

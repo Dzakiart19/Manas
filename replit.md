@@ -9,7 +9,7 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - **Sandbox**: Python FastAPI service for shell/file operations (port 8080)
 - **Database**: MongoDB (external - MongoDB Atlas)
 - **Cache/Queue**: Redis (external - RedisLabs, port 16364)
-- **LLM Provider**: Groq API (llama-3.3-70b-versatile)
+- **LLM Provider**: Anthropic Claude API (claude-sonnet-4-20250514)
 
 ## Project Structure
 ```
@@ -21,10 +21,10 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 │       ├── main.py              # App entry, serves frontend in production
 │       ├── core/config.py       # Settings and env vars
 │       ├── domain/              # Domain models and interfaces
-│       │   ├── models/memory.py # Memory with Groq sanitization
+│       │   ├── models/memory.py # Memory management
 │       │   └── services/agents/ # Agent logic, tool handling
 │       ├── infrastructure/      # External service implementations
-│       │   └── external/llm/openai_llm.py  # Groq-compatible LLM client
+│       │   └── external/llm/openai_llm.py  # Anthropic Claude LLM client
 │       └── interfaces/          # API routes and dependencies
 ├── sandbox/           # Sandbox service for command execution
 │   └── app/
@@ -44,28 +44,27 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - **Run**: Backend serves built frontend + API on port 5000, Sandbox on port 8080
 - **Type**: VM deployment (stateful, always running)
 
-## Key Modifications from Original (Groq API Compatibility)
-- Docker dependency removed from backend sandbox client
-- Supervisor service mocked for local operation (no Docker/supervisord)
-- `response_format` only used when tools are NOT present (Groq limitation)
-- `tool_choice` restricted to string values: "none", "auto", "required" (Groq limitation)
-- `function_name` field removed from tool messages (Groq limitation)
-- Memory sanitization in get_messages() strips unsupported fields
-- Frontend configured to run on port 5000 with proxy to backend on port 8000
-- Backend serves static frontend files in production mode
-- MongoDB uses certifi for SSL certificate validation
-- RedisLabs uses port 16364 (not standard 6379)
+## LLM Migration: Groq -> Anthropic Claude
+- LLM client (openai_llm.py) uses Anthropic Python SDK directly
+- Internal message format remains OpenAI-compatible; conversion happens at LLM layer
+- System messages extracted from message array and passed as `system` parameter
+- Tool calls converted: OpenAI function format <-> Anthropic tool_use content blocks
+- Tool results converted: OpenAI role:"tool" <-> Anthropic user message with tool_result blocks
+- Adjacent same-role messages merged for Claude API compatibility
+- Response leak fix: when tool_calls present, assistant content set to empty string
+- No more Groq workarounds (response_format restrictions, function_name sanitization removed)
+- max_tokens increased to 4096 (from 2000)
 
 ## Required Secrets
-- `API_KEY`: Groq API key
+- `API_KEY`: Anthropic (Claude) API key
 - `MONGODB_URI`: MongoDB Atlas connection string (mongodb+srv://...)
 - `REDIS_HOST`: Redis host address
 - `REDIS_PASSWORD`: Redis password
 - `JWT_SECRET_KEY`: JWT secret for authentication
 
 ## Environment Variables (configured)
-- `API_BASE`: https://api.groq.com/openai/v1
-- `MODEL_NAME`: llama-3.3-70b-versatile
+- `API_BASE`: https://api.anthropic.com
+- `MODEL_NAME`: claude-sonnet-4-20250514
 - `SANDBOX_ADDRESS`: localhost (local sandbox)
 - `AUTH_PROVIDER`: local (default admin login)
 - `LOCAL_AUTH_EMAIL`: admin@example.com
@@ -79,7 +78,6 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - Auth provider: local (no database required for login)
 
 ## Known Issues
-- Groq free tier has rate limiting (429 errors) - requests auto-retry with backoff
 - MongoDB Atlas free tier cluster may pause after inactivity
 - MongoDB Atlas requires IP whitelist: set 0.0.0.0/0 for Replit
 
@@ -90,3 +88,6 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - 2026-02-22: Fixed Redis port (16364), MongoDB SSL, memory sanitization
 - 2026-02-22: Production deployment configured (VM, frontend build + backend serving)
 - 2026-02-22: End-to-end testing passed: login, session creation, AI chat response
+- 2026-02-22: Migrated LLM from Groq to Anthropic Claude API
+- 2026-02-22: Fixed response leak bug (internal reasoning no longer shown to users)
+- 2026-02-22: Removed Groq-specific workarounds (function_name sanitization, response_format restrictions)

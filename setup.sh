@@ -45,6 +45,7 @@ packages = [
     ('fastapi', 'fastapi'),
     ('uvicorn', 'uvicorn'),
     ('openai', 'openai'),
+    ('anthropic', 'anthropic'),
     ('pydantic', 'pydantic'),
     ('pydantic_settings', 'pydantic-settings'),
     ('dotenv', 'python-dotenv'),
@@ -117,7 +118,7 @@ echo "  Email:    admin@example.com"
 echo "  Password: admin123"
 echo ""
 echo "Required Secrets (set in Replit Secrets tab):"
-echo "  - API_KEY        : Groq API key"
+echo "  - API_KEY        : Anthropic (Claude) API key"
 echo "  - MONGODB_URI    : MongoDB Atlas connection string"
 echo "  - REDIS_HOST     : Redis host address"
 echo "  - REDIS_PASSWORD : Redis password"
@@ -125,8 +126,8 @@ echo "  - REDIS_PORT     : Redis port (default: 16364)"
 echo "  - JWT_SECRET_KEY : JWT secret for authentication"
 echo ""
 echo "Environment Variables (pre-configured):"
-echo "  - API_BASE        : https://api.groq.com/openai/v1"
-echo "  - MODEL_NAME      : llama-3.3-70b-versatile"
+echo "  - API_BASE        : https://api.anthropic.com"
+echo "  - MODEL_NAME      : claude-sonnet-4-20250514"
 echo "  - AUTH_PROVIDER    : local"
 echo ""
 echo "Workflows to start:"
