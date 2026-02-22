@@ -9,6 +9,7 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - **Sandbox**: Python FastAPI service for shell/file operations (port 8080)
 - **Database**: MongoDB (external - MongoDB Atlas)
 - **Cache/Queue**: Redis (external)
+- **LLM Provider**: Groq API (llama-3.3-70b-versatile)
 
 ## Project Structure
 ```
@@ -26,6 +27,7 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 │       ├── main.py
 │       ├── services/       # Shell, file, supervisor services
 │       └── api/            # API routes
+├── setup.sh           # Auto-download all dependencies
 └── replit.md
 ```
 
@@ -39,20 +41,38 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - Supervisor service mocked for local operation (no Docker/supervisord)
 - Frontend configured to run on port 5000 with proxy to backend on port 8000
 - Environment variables managed through Replit secrets system
+- Backend starts gracefully even if MongoDB/Redis are unavailable
+- MongoDB uses certifi for SSL certificate validation
+- Connection timeouts reduced (10s MongoDB, 5s Redis) for faster startup
 
 ## Required Secrets
-- `API_KEY`: LLM API key (OpenAI or compatible)
-- `MONGODB_URI`: MongoDB connection string (e.g., MongoDB Atlas)
-- `REDIS_HOST`: Redis host
+- `API_KEY`: Groq API key
+- `MONGODB_URI`: MongoDB Atlas connection string (mongodb+srv://...)
+- `REDIS_HOST`: Redis host address
 - `REDIS_PASSWORD`: Redis password
 - `JWT_SECRET_KEY`: JWT secret for authentication
 
 ## Environment Variables (configured)
-- `API_BASE`: LLM API base URL
-- `MODEL_NAME`: LLM model name
+- `API_BASE`: https://api.groq.com/openai/v1
+- `MODEL_NAME`: llama-3.3-70b-versatile
 - `SANDBOX_ADDRESS`: localhost (local sandbox)
 - `AUTH_PROVIDER`: local (default admin login)
+- `LOCAL_AUTH_EMAIL`: admin@example.com
+- `LOCAL_AUTH_PASSWORD`: admin123
 - `BACKEND_URL`: http://localhost:8000
+
+## Login
+- Email: admin@example.com
+- Password: admin123
+- Auth provider: local (no database required for login)
+
+## Setup
+Run `bash setup.sh` to install all dependencies automatically.
+
+## Known Issues
+- MongoDB Atlas free tier cluster may pause after inactivity. Resume from Atlas dashboard if connection fails.
+- MongoDB Atlas requires IP whitelist: set 0.0.0.0/0 to allow all IPs for Replit.
 
 ## Recent Changes
 - 2026-02-22: Initial migration from GitHub, Docker dependencies removed, sandbox and frontend configured for Replit
+- 2026-02-22: All dependencies installed, API configured for Groq, backend graceful startup without MongoDB/Redis, auto-setup script created
