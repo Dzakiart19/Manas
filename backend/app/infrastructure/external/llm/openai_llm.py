@@ -9,6 +9,8 @@ import json
 
 logger = logging.getLogger(__name__)
 
+RATE_LIMIT_KEYWORDS = ["限流", "rate limit", "too many requests", "请求过多"]
+
 class OpenAILLM(LLM):
     def __init__(self):
         settings = get_settings()
@@ -31,17 +33,41 @@ class OpenAILLM(LLM):
     def max_tokens(self) -> int:
         return self._max_tokens
 
+    def _is_rate_limited(self, data: dict) -> bool:
+        content = ""
+        if "openai_compatible" in data:
+            choices = data["openai_compatible"].get("choices", [])
+            if choices:
+                content = choices[0].get("message", {}).get("content", "")
+        elif "choices" in data:
+            choices = data["choices"]
+            if choices:
+                content = choices[0].get("message", {}).get("content", "")
+        if not content:
+            text_blocks = data.get("content", [])
+            if isinstance(text_blocks, list):
+                for block in text_blocks:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        content += block.get("text", "")
+        
+        for kw in RATE_LIMIT_KEYWORDS:
+            if kw in content:
+                return True
+        return False
+
     async def ask(self, messages: List[Dict[str, str]],
                 tools: Optional[List[Dict[str, Any]]] = None,
                 response_format: Optional[Dict[str, Any]] = None,
                 tool_choice: Optional[str] = None) -> Dict[str, Any]:
-        max_retries = 3
-        base_delay = 1.0
+        max_retries = 5
+        base_delay = 30.0
 
         for attempt in range(max_retries + 1):
             try:
                 if attempt > 0:
                     delay = base_delay * (2 ** (attempt - 1))
+                    if delay > 120:
+                        delay = 120
                     logger.info(f"Retrying API request (attempt {attempt + 1}/{max_retries + 1}) after {delay}s delay")
                     await asyncio.sleep(delay)
 
@@ -50,6 +76,7 @@ class OpenAILLM(LLM):
                     "messages": messages,
                     "temperature": self._temperature,
                     "max_tokens": self._max_tokens,
+                    "stream": False,
                 }
 
                 if tools:
@@ -77,12 +104,36 @@ class OpenAILLM(LLM):
                     error_text = response.text
                     error_msg = f"API returned status {response.status_code}: {error_text}"
                     logger.error(error_msg)
+                    if response.status_code == 429:
+                        logger.warning("Rate limited by API (HTTP 429), waiting before retry...")
+                        if attempt < max_retries:
+                            continue
                     if attempt == max_retries:
                         raise ValueError(f"Failed after {max_retries + 1} attempts: {error_msg}")
                     continue
 
-                data = response.json()
+                raw_text = response.text
+                if not raw_text or not raw_text.strip():
+                    logger.warning(f"API returned empty body on attempt {attempt + 1}")
+                    if attempt == max_retries:
+                        raise ValueError(f"Failed after {max_retries + 1} attempts: empty response body")
+                    continue
+
+                try:
+                    data = response.json()
+                except json.JSONDecodeError:
+                    logger.warning(f"API returned non-JSON on attempt {attempt + 1}: {raw_text[:200]}")
+                    if attempt == max_retries:
+                        raise ValueError(f"Failed after {max_retries + 1} attempts: non-JSON response")
+                    continue
+
                 logger.debug(f"Response from API: {json.dumps(data, ensure_ascii=False)[:500]}")
+
+                if self._is_rate_limited(data):
+                    logger.warning(f"Rate limited by API on attempt {attempt + 1}, waiting before retry...")
+                    if attempt == max_retries:
+                        raise ValueError("API rate limit exceeded. Please try again later.")
+                    continue
 
                 choices = None
                 if "choices" in data and len(data["choices"]) > 0:
