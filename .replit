@@ -2,8 +2,8 @@ modules = ["python-3.11", "nodejs-20"]
 [userenv]
 
 [userenv.shared]
-API_BASE = "https://api.anthropic.com"
-MODEL_NAME = "claude-sonnet-4-20250514"
+API_BASE = "https://api--ngad4kbh.replit.app/v1/agent/completions"
+MODEL_NAME = "openai"
 TEMPERATURE = "0.7"
 MAX_TOKENS = "4096"
 MONGODB_DATABASE = "manus"
