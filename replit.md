@@ -44,27 +44,24 @@ AI-Manus is an AI agent platform migrated from https://github.com/Simpleyyt/ai-m
 - **Run**: Backend serves built frontend + API on port 5000, Sandbox on port 8080
 - **Type**: VM deployment (stateful, always running)
 
-## LLM Migration: Groq -> Anthropic Claude
-- LLM client (openai_llm.py) uses Anthropic Python SDK directly
-- Internal message format remains OpenAI-compatible; conversion happens at LLM layer
-- System messages extracted from message array and passed as `system` parameter
-- Tool calls converted: OpenAI function format <-> Anthropic tool_use content blocks
-- Tool results converted: OpenAI role:"tool" <-> Anthropic user message with tool_result blocks
-- Adjacent same-role messages merged for Claude API compatibility
-- Response leak fix: when tool_calls present, assistant content set to empty string
-- No more Groq workarounds (response_format restrictions, function_name sanitization removed)
-- max_tokens increased to 4096 (from 2000)
+## LLM Provider: OpenAI-compatible Custom API
+- LLM client (openai_llm.py) uses httpx to POST directly to custom OpenAI-compatible endpoint
+- Base URL: configured via API_BASE env var
+- Model: configured via MODEL_NAME env var
+- Messages sent in standard OpenAI chat completion format (no conversion needed)
+- Supports tools, tool_choice, response_format pass-through
+- max_tokens: 4096
 
 ## Required Secrets
-- `API_KEY`: Anthropic (Claude) API key
+- `API_KEY`: Custom API key for OpenAI-compatible endpoint
 - `MONGODB_URI`: MongoDB Atlas connection string (mongodb+srv://...)
 - `REDIS_HOST`: Redis host address
 - `REDIS_PASSWORD`: Redis password
 - `JWT_SECRET_KEY`: JWT secret for authentication
 
 ## Environment Variables (configured)
-- `API_BASE`: https://api.anthropic.com
-- `MODEL_NAME`: claude-sonnet-4-20250514
+- `API_BASE`: https://api--ngad4kbh.replit.app/v1/agent/completions
+- `MODEL_NAME`: openai
 - `SANDBOX_ADDRESS`: localhost (local sandbox)
 - `AUTH_PROVIDER`: local (default admin login)
 - `LOCAL_AUTH_EMAIL`: admin@example.com

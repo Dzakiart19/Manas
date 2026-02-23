@@ -82,16 +82,22 @@ class OpenAILLM(LLM):
                     continue
 
                 data = response.json()
-                logger.debug(f"Response from API: {json.dumps(data)[:500]}")
+                logger.debug(f"Response from API: {json.dumps(data, ensure_ascii=False)[:500]}")
 
-                if "choices" not in data or len(data["choices"]) == 0:
-                    error_msg = f"API returned invalid response (no choices) on attempt {attempt + 1}"
+                choices = None
+                if "choices" in data and len(data["choices"]) > 0:
+                    choices = data["choices"]
+                elif "openai_compatible" in data and "choices" in data["openai_compatible"] and len(data["openai_compatible"]["choices"]) > 0:
+                    choices = data["openai_compatible"]["choices"]
+
+                if not choices:
+                    error_msg = f"API returned invalid response (no choices) on attempt {attempt + 1}: {json.dumps(data, ensure_ascii=False)[:300]}"
                     logger.error(error_msg)
                     if attempt == max_retries:
                         raise ValueError(f"Failed after {max_retries + 1} attempts: {error_msg}")
                     continue
 
-                message = data["choices"][0].get("message", {})
+                message = choices[0].get("message", {})
                 result = {
                     "role": "assistant",
                     "content": message.get("content") or "",
